@@ -1,6 +1,7 @@
-
 #include <Arduino.h>
 #include <U8g2lib.h>
+
+#include "srButton.h"
 
 //OLED 192x32 stuff - probably I2C or something like that:
 #ifdef U8X8_HAVE_HW_SPI
@@ -13,33 +14,58 @@ U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
 
 
-#define NBARS 2
-#define NVOICES 2
+#define NBARS (2)
+#define NVOICES (4)
 
-#define BDPIN 3
-#define SDPIN 4
+#define BDPIN (3)
+#define SDPIN (4)
+#define HHPIN (5)
+#define LTPIN (6)
 
-#define BTNPIN (5)
+#define BTN_VOICE (7)
+#define BTN_HIT (8)
+#define BTN_REC (9)
+#define BTN_STSTOP (10)
+
+
+
+srButton btn_voice(BTN_VOICE);
+srButton btn_hit(BTN_HIT);
+srButton btn_ststop(BTN_STSTOP);
+
+bool playing = true;
+
 
 #define sp  Serial.print
 #define spl Serial.println
 
-#define TRIG_LEN 15
+#define TRIG_LEN (15)
 
-bool play[NVOICES];
+#define NMEMS (18)
 
-byte bd1 = B11011101;
-byte bd2 =           B10110111;
-byte sd1 = B00100010;
-byte sd2 =           B01001011;
+//we don't use this yet...but let's have it now so we can check we've enough memory!
+byte memory[NMEMS][NVOICES][NBARS];
 
-byte bdc;
-byte sdc;
+
+//TODO: When we start to store patterns
+byte pattern[NVOICES][NBARS];
+
+//byte bd1 = B11011101;
+//byte bd2 =           B10110111;
+//byte sd1 = B00100010;
+//byte sd2 =           B01001011;
+
+//byte bdc;
+//byte sdc;
 byte beat = 0;
-byte bar = 2; // has to be the last bar so we do the switch correctly
-int bpm = 360;
+byte bar = 1; // has to be the last bar so we do the switch correctly
+int bpm = 480;
 int beatmillis =  60000/bpm;  //500;//1000;//400;
 int t1, t2;
+
+//buffer for writing stuff
+char bbc[8];
+
 
 byte idx[] = {B10000000,
               B01000000,
@@ -51,8 +77,9 @@ byte idx[] = {B10000000,
               B00000001
              };
 
-int bdval, sdval;
-
+//int bdval, sdval;
+byte tval[NVOICES];
+byte vpin[] = {BDPIN,SDPIN,HHPIN,LTPIN};
 
 
 unsigned long m1, m2;
@@ -60,7 +87,8 @@ unsigned long m1, m2;
 
 
 void u8g2_prepare(void) {
-  u8g2.setFont(u8g2_font_6x10_tf);
+  //u8g2.setFont(u8g2_font_6x10_tf);
+  u8g2.setFont(u8g2_font_5x8_tf);
   u8g2.setFontRefHeightExtendedText();
   u8g2.setDrawColor(1);
   u8g2.setFontPosTop();
@@ -68,9 +96,12 @@ void u8g2_prepare(void) {
 }
 
 
-
+//POSITIONS OF GRAPHIX
 #define PATT_X (10)
 #define PATT_Y (2)
+#define TEXT_X (92)
+#define PBLOCK_SIZE (4)
+#define PBLOCK_GAP (PBLOCK_SIZE+1)
 
 
 
@@ -80,8 +111,8 @@ byte gv = 3;
 void draw_voice(byte col){
 
   u8g2.setDrawColor(col);
-  u8g2.drawLine(PATT_X-4, PATT_Y+(gv*4)+1, PATT_X-2, PATT_Y+(gv*4)+1);
-  u8g2.drawLine(PATT_X-3, PATT_Y+(gv*4)  , PATT_X-3, PATT_Y+(gv*4)+2);
+  u8g2.drawLine(PATT_X-5, PATT_Y+(gv*PBLOCK_GAP)+1, PATT_X-3, PATT_Y+(gv*PBLOCK_GAP)+1);
+  u8g2.drawLine(PATT_X-4, PATT_Y+(gv*PBLOCK_GAP)  , PATT_X-4, PATT_Y+(gv*PBLOCK_GAP)+2);
   
   u8g2.setDrawColor(1);
 }
@@ -89,7 +120,6 @@ void draw_voice(byte col){
 
 
 void update_voice(){
-
   
   //u8g2.drawFrame(PATT_X+(3*((0-1)+(8*(2-1)))),PATT_Y,3,23);
   
@@ -97,83 +127,45 @@ void update_voice(){
   gv++;
   if(gv>3)gv=0;
   draw_voice(1);
-
-  
 }
 
 
 
-
-
 void draw(void) {
-
-
-  u8g2.drawFrame(1,0,127,32);
-
+  //bounding box
+  u8g2.drawFrame(PATT_X-2,0,TEXT_X-PATT_X+1,32);//127,32);
 
   byte bb= beat;
   if(!beat)bb=8;
-  u8g2.drawFrame(PATT_X+(3*((bb-1)+(8*(bar-1)))),PATT_Y,3,23);
+  u8g2.drawFrame(PATT_X+(PBLOCK_GAP*((bb-1)+(8*(bar)))),PATT_Y,PBLOCK_GAP,23);
 
   //Draw the current pattern
-  for(byte brno=1;brno<3;brno++){
+  for(byte brno=0;brno<NBARS;brno++){
     for(byte btno=0;btno<8;btno++){
-      switch(brno){
-        case 1:
-          
-          if(trigger(bd1, btno)){
-            u8g2.drawBox(PATT_X+(3*(btno+(8*(brno-1)))),PATT_Y+4,3,3);
-          }
-          else{
-            
-          }
-          if(trigger(sd1, btno)){
-            u8g2.drawBox(PATT_X+(3*(btno+(8*(brno-1)))),PATT_Y+8,3,3);
-          }
-          else{
-            
-          }
-
-          break;
-        case 2:
-          
-          if(trigger(bd2, btno)){
-            //int xx = PATT_X+(3*(btno+(8*(brno-1))))+1;
-            //u8g2.drawLine(xx,PATT_Y+4,xx,PATT_Y+6);
-            u8g2.drawBox(PATT_X+(3*(btno+(8*(brno-1)))),PATT_Y+4,3,3);
-          }
-          else{
-            
-          }
-          if(trigger(sd2, btno)){
-            //int xx = PATT_X+(3*(btno+(8*(brno-1))))+1;
-            //u8g2.drawLine(xx,PATT_Y+8,xx,PATT_Y+10);
-            u8g2.drawBox(PATT_X+(3*(btno+(8*(brno-1)))),PATT_Y+8,3,3);
-          }
-          else{
-            
-          }
-
-          break;
+      for(byte vv=0;vv<NVOICES;vv++){
+        if(trigger(pattern[vv][brno],btno)){
+          u8g2.drawBox(PATT_X+(PBLOCK_GAP*(btno+(8*(brno)))),PATT_Y+(PBLOCK_GAP*vv),PBLOCK_SIZE,PBLOCK_SIZE);
+        }
       }
     }
   }
   
   //Draw the current position
 
-  char bbc[8];
+  //Print the bar count
   sprintf(bbc,"%d/%d",bar,bb);
-  u8g2.drawStr(10,22,bbc);
+  u8g2.drawStr(TEXT_X,22,bbc);
   
   //sprintf(bbc,"bms = %d",beatmillis);
   //u8g2.drawStr(70,10,bbc);
   //sprintf(bbc,"bpm = %d",bpm);
   //u8g2.drawStr(70,18,bbc);
-  
+
+  //Print the tempo
   //sprintf(bbc,"bms = %d",beatmillis);
   //u8g2.drawStr(70,10,bbc);
   sprintf(bbc,"%d",bpm);
-  u8g2.drawStr(70,18,bbc);
+  u8g2.drawStr(TEXT_X,14,bbc);
 
 
   //draw on the current voice marker
@@ -192,15 +184,31 @@ void draw(void) {
 
 
 
-
-
+       
 
 
 
 void setup() {
   // put your setup code here, to run once:
-  bdc = bd1;
-  sdc = sd1;
+
+  memset(memory,0,NMEMS*NVOICES*NBARS*sizeof(byte));
+
+  //byte bd1    = B11011101;
+  //byte bd2    =           B10110111;
+  //byte sd1    = B00100010;
+  //byte sd2    =           B01001011;
+
+  //TODO: get pattern to be a pointer into the larger memory array (possibly on loading from EEPROM)
+  //pattern = &(memory + 0);
+  
+  pattern[0][0] = B11011101;
+  pattern[0][1] =           B10110111;
+  pattern[1][0] = B00100010;
+  pattern[1][1] =           B01001011;
+  pattern[2][0] = 0;
+  pattern[2][1] =           B10011001;
+  pattern[3][0] = B01010101;
+  pattern[3][1] = 0;
   
   pinMode(SDPIN,OUTPUT);
   pinMode(BDPIN,OUTPUT);
@@ -209,9 +217,12 @@ void setup() {
   //Button shizz
   
   //configure pin 2 as an input and enable the internal pull-up resistor
-  pinMode(BTNPIN, INPUT_PULLUP);
   pinMode(13, OUTPUT);
 
+  //buttons
+  pinMode(BTN_VOICE, INPUT_PULLUP);
+  pinMode(BTN_HIT, INPUT_PULLUP);
+  pinMode(BTN_STSTOP, INPUT_PULLUP);
 
   
   Serial.begin(9600);
@@ -223,6 +234,11 @@ void setup() {
 }
 
 
+
+
+
+
+
 int trigger(byte pattern, byte beat) {
 
   //byte pand = pattern & idx[beat];
@@ -232,12 +248,63 @@ int trigger(byte pattern, byte beat) {
 }
 
 
+
+
+
+
+
+
+
+
+
 long mc = 0;
 
-//TODO: put these in a class
-byte btnval;
-long debounce_time;
-#define DEBOUNCE_DELAY (100) //millisecond delay
+
+/*byte debounced_button(long *moment, long *debounce, byte pin){
+
+
+    if((m2 - *debounce)>DEBOUNCE_DELAY){
+      btnval = digitalRead(pin);
+      if (btnval == HIGH) {
+        digitalWrite(LED_BUILTIN, LOW);
+      } else {
+        digitalWrite(LED_BUILTIN, HIGH);
+        update_voice();
+        u8g2.sendBuffer();
+      }
+      debounce_time = m2;
+    }
+
+    return LOW;  
+}*/
+
+
+
+
+
+
+
+
+byte vv;
+
+
+
+
+void toggle_hit(){
+/*
+  gv
+  pattern[vv]
+*/
+
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -246,68 +313,87 @@ void loop() {
   mc = 0;
   m1 = millis();
   
-
-  //cycle through the bars..
-  if (!beat) {
-    switch (bar) {
-      case 1:
-        bar = 2;
-        break;
-      case 2:
-        bar = 1;
-        break;
+  if(playing){
+    //cycle through the bars..
+    if (!beat) {
+      switch (bar) {
+        case 0:
+          bar = 1;
+          break;
+        case 1:
+          bar = 0;
+          break;
+      }
     }
-  }
-  switch (bar) {
-    case 1:
-      bdval = trigger(bd1, beat);
-      sdval = trigger(sd1, beat);
-      break;
-    case 2:
-      bdval = trigger(bd2, beat);
-      sdval = trigger(sd2, beat);
-      break;
-  }
-
-  digitalWrite(BDPIN, bdval);
-  digitalWrite(SDPIN, sdval);
-
-  do{
-    m2 = millis();
-    mc++;
-  }while(m1+TRIG_LEN > m2);
+    
+    for(vv=0;vv<NVOICES;vv++){
+      tval[vv] = trigger(pattern[vv][bar],beat);
+    }
   
-  digitalWrite(BDPIN, LOW);
-  digitalWrite(SDPIN, LOW);
+    for(vv=0;vv<NVOICES;vv++)
+      digitalWrite(vpin[vv], tval[vv]);
+      
+    do{
+      m2 = millis();
+      mc++;
+    }while(m1+TRIG_LEN > m2);
 
-  //This reports to serial, but also puts a bit of noise on the line!
-  //sp("Bar ");sp(bar,DEC);sp(", Beat ");sp(beat,DEC);sp(", bdval = ");sp(bdval,DEC);sp(", sdval = ");sp(sdval,DEC);sp(", mc = ");sp(mc,DEC);spl();
+    digitalWrite(BDPIN, LOW);
+    digitalWrite(SDPIN, LOW);
   
-  //update beat
-  beat++;
-  if (beat > 7) beat = 0;
+    //This reports to serial, but also puts a bit of noise on the line!
+    //sp("Bar ");sp(bar,DEC);sp(", Beat ");sp(beat,DEC);sp(", bdval = ");sp(bdval,DEC);sp(", sdval = ");sp(sdval,DEC);sp(", mc = ");sp(mc,DEC);spl();
+    
+    //update beat
+    beat++;
+    if (beat > 7) beat = 0;
+
+  }
+
+  //NOW WE CAN USE THE REMAINING TIME TO UPDATE THINGS..
 
   //update display  
   u8g2.clearBuffer();
   draw();
-  u8g2.sendBuffer();
 
   //Timer
   m1 += beatmillis-TRIG_LEN;
+  m2 = millis();
+  sprintf(bbc,"%d",m1-m2);
+  u8g2.drawStr(TEXT_X,6,bbc);
+  u8g2.sendBuffer();
+
+  //update controls
   do{
     m2 = millis();
 
-    if((m2 - debounce_time)>DEBOUNCE_DELAY){
-      btnval = digitalRead(BTNPIN);
-      if (btnval == HIGH) {
-        digitalWrite(13, LOW);
-      } else {
-        digitalWrite(13, HIGH);
-        update_voice();
-        u8g2.sendBuffer();
-      }
-      debounce_time = m2;
+    if(btn_voice.check(m2)){
+      digitalWrite(LED_BUILTIN, HIGH);
+      update_voice();
     }
+    else{
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+
+    if(btn_hit.check(m2)){
+      digitalWrite(LED_BUILTIN, HIGH);
+      if(playing) playing = false;
+      else playing = true;
+    }
+    else{
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+
+    if(btn_ststop.check(m2)){
+      digitalWrite(LED_BUILTIN, HIGH);
+      if(playing) playing = false;
+      else playing = true;
+    }
+    else{
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+
+    u8g2.sendBuffer(); 
 
   }while (m1 > m2);
 
