@@ -17,7 +17,6 @@ U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 #define NBARS (2)
 #define NVOICES (4)
 
-#define VOLCAPIN (2)
 #define BDPIN (3)
 #define SDPIN (4)
 #define HHPIN (5)
@@ -25,17 +24,14 @@ U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
 #define BTN_VOICE (7)
 #define BTN_HIT (8)
-#define BTN_STSTOP (9)
-#define BTN_SLOWER (10)
-#define BTN_FASTER (11)
-#define BTN_REC (12) //not needed!
+#define BTN_REC (9)
+#define BTN_STSTOP (10)
+
 
 
 srButton btn_voice(BTN_VOICE);
 srButton btn_hit(BTN_HIT);
 srButton btn_ststop(BTN_STSTOP);
-srButton btn_slower(BTN_SLOWER);
-srButton btn_faster(BTN_FASTER);
 
 bool playing = true;
 
@@ -63,7 +59,7 @@ byte pattern[NVOICES][NBARS];
 //byte sdc;
 byte beat = 0;
 byte bar = 1; // has to be the last bar so we do the switch correctly
-int bpm = 240;
+int bpm = 480;
 int beatmillis =  60000/bpm;  //500;//1000;//400;
 int t1, t2;
 
@@ -204,7 +200,7 @@ void setup() {
 
   //TODO: get pattern to be a pointer into the larger memory array (possibly on loading from EEPROM)
   //pattern = &(memory + 0);
- /* 
+  
   pattern[0][0] = B11011101;
   pattern[0][1] =           B10110111;
   pattern[1][0] = B00100010;
@@ -213,26 +209,9 @@ void setup() {
   pattern[2][1] =           B10011001;
   pattern[3][0] = B01010101;
   pattern[3][1] = 0;
-*/
-
-
-  pattern[0][0] = B11011101;
-  pattern[0][1] =           0;
-  pattern[1][0] = 0;
-  pattern[1][1] =           B11011101;
-  pattern[2][0] = B00100010;
-  pattern[2][1] =           B00100010;
-  pattern[3][0] = 0;
-  pattern[3][1] =           B00000011;
-  
-
-
-  pinMode(VOLCAPIN,OUTPUT);
   
   pinMode(SDPIN,OUTPUT);
   pinMode(BDPIN,OUTPUT);
-  pinMode(HHPIN,OUTPUT);
-  pinMode(LTPIN,OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
 
   //Button shizz
@@ -244,8 +223,6 @@ void setup() {
   pinMode(BTN_VOICE, INPUT_PULLUP);
   pinMode(BTN_HIT, INPUT_PULLUP);
   pinMode(BTN_STSTOP, INPUT_PULLUP);
-  pinMode(BTN_SLOWER, INPUT_PULLUP);
-  pinMode(BTN_FASTER, INPUT_PULLUP);
 
   
   Serial.begin(9600);
@@ -281,6 +258,33 @@ int trigger(byte pattern, byte beat) {
 
 
 long mc = 0;
+
+
+/*byte debounced_button(long *moment, long *debounce, byte pin){
+
+
+    if((m2 - *debounce)>DEBOUNCE_DELAY){
+      btnval = digitalRead(pin);
+      if (btnval == HIGH) {
+        digitalWrite(LED_BUILTIN, LOW);
+      } else {
+        digitalWrite(LED_BUILTIN, HIGH);
+        update_voice();
+        u8g2.sendBuffer();
+      }
+      debounce_time = m2;
+    }
+
+    return LOW;  
+}*/
+
+
+
+
+
+
+
+
 byte vv;
 
 
@@ -304,14 +308,10 @@ void toggle_hit(){
 
 
 
-byte gvb;
-byte gvbar;
 
 void loop() {
   mc = 0;
   m1 = millis();
-
-
   
   if(playing){
     //cycle through the bars..
@@ -325,12 +325,6 @@ void loop() {
           break;
       }
     }
-
-  
-    gvb = beat;
-    gvbar = bar;
-
-
     
     for(vv=0;vv<NVOICES;vv++){
       tval[vv] = trigger(pattern[vv][bar],beat);
@@ -338,28 +332,14 @@ void loop() {
   
     for(vv=0;vv<NVOICES;vv++)
       digitalWrite(vpin[vv], tval[vv]);
-
-    digitalWrite(VOLCAPIN,HIGH);  
+      
     do{
       m2 = millis();
       mc++;
     }while(m1+TRIG_LEN > m2);
 
-    digitalWrite(VOLCAPIN,LOW);  
-
-    //Should do it this way when all the voices have the same trigger length:
-    //for(vv=0;vv<NVOICES;vv++)
-    //  digitalWrite(vpin[vv], LOW);
-    //But for now we are just triggering the two twin-t drums on BDPIN and SDPIN
     digitalWrite(BDPIN, LOW);
     digitalWrite(SDPIN, LOW);
-
-    do{
-      m2 = millis();
-      mc++;
-    }while(m1+TRIG_LEN+TRIG_LEN+TRIG_LEN > m2);
-    digitalWrite(LTPIN, LOW);
-
   
     //This reports to serial, but also puts a bit of noise on the line!
     //sp("Bar ");sp(bar,DEC);sp(", Beat ");sp(beat,DEC);sp(", bdval = ");sp(bdval,DEC);sp(", sdval = ");sp(sdval,DEC);sp(", mc = ");sp(mc,DEC);spl();
@@ -387,17 +367,7 @@ void loop() {
   do{
     m2 = millis();
 
-    if(btn_ststop.check(millis())){
-      digitalWrite(LED_BUILTIN, HIGH);
-      playing = !playing;
-      //if(playing) playing = false;
-      //else playing = true;
-    }
-    else{
-      digitalWrite(LED_BUILTIN, LOW);
-    }
-    
-    if(btn_voice.check(millis())){
+    if(btn_voice.check(m2)){
       digitalWrite(LED_BUILTIN, HIGH);
       update_voice();
     }
@@ -405,35 +375,23 @@ void loop() {
       digitalWrite(LED_BUILTIN, LOW);
     }
 
-    if(btn_hit.check(millis())){
+    if(btn_hit.check(m2)){
       digitalWrite(LED_BUILTIN, HIGH);
-      //get the bit state...
-
-      pattern[gv][gvbar] = pattern[gv][gvbar] ^ idx[gvb];
-      
+      if(playing) playing = false;
+      else playing = true;
     }
     else{
       digitalWrite(LED_BUILTIN, LOW);
     }
 
-    if(btn_slower.check(millis())){
+    if(btn_ststop.check(m2)){
       digitalWrite(LED_BUILTIN, HIGH);
-      if(bpm > 8)bpm -= 8;
-      beatmillis =  60000/bpm;
+      if(playing) playing = false;
+      else playing = true;
     }
     else{
       digitalWrite(LED_BUILTIN, LOW);
     }
-
-    if(btn_faster.check(millis())){
-      digitalWrite(LED_BUILTIN, HIGH);
-      bpm += 8;
-      beatmillis = 60000/bpm;
-    }
-    else{
-      digitalWrite(LED_BUILTIN, LOW);
-    }
-
 
     u8g2.sendBuffer(); 
 

@@ -1,6 +1,6 @@
 
 
-#define DEBOUNCE_DELAY (150) //millisecond delay
+#define DEBOUNCE_DELAY (100) //millisecond delay
 
 class srButton{
 
