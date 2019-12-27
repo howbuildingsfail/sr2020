@@ -297,12 +297,21 @@ void toggle_hit(){
 
 
 
+/* Instead of waiting for the 'beat' to end within a single iteration of loop, let's 
+ * cycle around the whole thing but use TimedAction objects to handle the triggering
+ */
+void newloop(){
 
 
 
 
+  
+}
 
 
+
+//////////////////////////////////////////////////////////////////////////////////////
+// Delete what's below when you have the loop() above working properly
 
 byte gvb;
 byte gvbar;
@@ -311,8 +320,6 @@ void loop() {
   mc = 0;
   m1 = millis();
 
-
-  
   if(playing){
     //cycle through the bars..
     if (!beat) {
