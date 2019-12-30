@@ -25,6 +25,11 @@ if(playing)
 ```
 
 
+# OLED
+
+the oled driver used here is: `https://github.com/olikraus/u8g2`
+
+
 
 # SR-88 Controls
 
