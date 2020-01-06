@@ -141,14 +141,44 @@ void handleNoteOn(byte channel, byte pitch, byte velocity)
     // otherwise it would slow down the loop() and have a bad impact
     // on real-time performance.
 
-    
-      digitalWrite(LED_BUILTIN, HIGH);
+    switch(pitch){
+      case BDMIDI:
+        digitalWrite(BDPIN,HIGH);
+        break;
+      case SDMIDI:
+        digitalWrite(SDPIN,HIGH);
+        break;
+      case HHMIDI:
+        digitalWrite(HHPIN,HIGH);
+        break;
+      case LTMIDI:
+        digitalWrite(LTPIN,HIGH);
+        break;
+    }
+
+    digitalWrite(LED_BUILTIN, HIGH);
 }
 
 void handleNoteOff(byte channel, byte pitch, byte velocity)
 {
     // Do something when the note is released.
     // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
+    switch(pitch){
+      case BDMIDI:
+        digitalWrite(BDPIN,LOW);
+        break;
+      case SDMIDI:
+        digitalWrite(SDPIN,LOW);
+        break;
+      case HHMIDI:
+        digitalWrite(HHPIN,LOW);
+        break;
+      case LTMIDI:
+        digitalWrite(LTPIN,LOW);
+        break;
+    }
+
+    digitalWrite(LED_BUILTIN, HIGH);
       digitalWrite(LED_BUILTIN, LOW);
 }
 
@@ -288,30 +318,21 @@ byte vv;
 
 
 
-void toggle_hit(){
-/*
-  gv
-  pattern[vv]
-*/
-
-}
-
-
-
 
 /* Instead of waiting for the 'beat' to end within a single iteration of loop, let's 
  * cycle around the whole thing but use TimedAction objects to handle the triggering
  */
-void newloop(){
+#ifdef DOMIDI 
+void loop(){
 
 
-
+  MIDI.read();
 
   
 }
 
 
-
+#else
 //////////////////////////////////////////////////////////////////////////////////////
 // Delete what's below when you have the loop() above working properly
 
@@ -458,3 +479,5 @@ void loop() {
   }while (m1 > m2);
 
 }
+
+#endif
