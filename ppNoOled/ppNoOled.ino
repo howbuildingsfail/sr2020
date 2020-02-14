@@ -7,7 +7,7 @@
 //////////////////////////////////////////////////////////////////////////
 // MIDI libraries etc if needed:
 
-#define DOMIDI
+//#define DOMIDI
 #ifdef DOMIDI
 
 #include <MIDI.h>
@@ -16,9 +16,6 @@
 #define SDMIDI 38
 #define HHMIDI 42
 #define LTMIDI 45
-
-
-
 
 // Created and bind the MIDI interface to the default hardware Serial port
 MIDI_CREATE_DEFAULT_INSTANCE();
@@ -154,6 +151,9 @@ void handleNoteOn(byte channel, byte pitch, byte velocity)
       case LTMIDI:
         digitalWrite(LTPIN,HIGH);
         break;
+      default:
+        digitalWrite(BDPIN,HIGH);
+        break;
     }
 
     digitalWrite(LED_BUILTIN, HIGH);
@@ -176,10 +176,13 @@ void handleNoteOff(byte channel, byte pitch, byte velocity)
       case LTMIDI:
         digitalWrite(LTPIN,LOW);
         break;
+      default:
+        digitalWrite(BDPIN,LOW);
+        break;
     }
 
-    digitalWrite(LED_BUILTIN, HIGH);
-      digitalWrite(LED_BUILTIN, LOW);
+    //digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(LED_BUILTIN, LOW);
 }
 
 #endif
@@ -252,6 +255,7 @@ void setup() {
   
 #ifdef DOMIDI
 
+
   // Connect the handleNoteOn function to the library,
   // so it is called upon reception of a NoteOn.
   MIDI.setHandleNoteOn(handleNoteOn);  // Put only the name of the function
@@ -259,8 +263,9 @@ void setup() {
   // Do the same for NoteOffs
   MIDI.setHandleNoteOff(handleNoteOff);
   
-  MIDI.begin(MIDI_CHANNEL_OMNI);  // Listen to all incoming messages
-  
+  MIDI.begin(1);  // Listen to all incoming messages
+
+  Serial.begin(115200);  
 #else
 
   Serial.begin(9600);
