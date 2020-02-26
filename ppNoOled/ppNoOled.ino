@@ -13,7 +13,7 @@
 #include <MIDI.h>
 
 #define BDMIDI 36
-#define SDMIDI 38
+#define SDMIDI 39
 #define HHMIDI 42
 #define LTMIDI 45
 
@@ -142,6 +142,7 @@ void handleNoteOn(byte channel, byte pitch, byte velocity)
       case BDMIDI:
         digitalWrite(BDPIN,HIGH);
         break;
+      case 39:
       case SDMIDI:
         digitalWrite(SDPIN,HIGH);
         break;
@@ -152,7 +153,7 @@ void handleNoteOn(byte channel, byte pitch, byte velocity)
         digitalWrite(LTPIN,HIGH);
         break;
       default:
-        digitalWrite(BDPIN,HIGH);
+        //digitalWrite(BDPIN,HIGH);
         break;
     }
 
@@ -177,7 +178,7 @@ void handleNoteOff(byte channel, byte pitch, byte velocity)
         digitalWrite(LTPIN,LOW);
         break;
       default:
-        digitalWrite(BDPIN,LOW);
+        //digitalWrite(BDPIN,LOW);
         break;
     }
 
