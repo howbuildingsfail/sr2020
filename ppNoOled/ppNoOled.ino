@@ -263,7 +263,7 @@ void setup() {
   // Do the same for NoteOffs
   MIDI.setHandleNoteOff(handleNoteOff);
   
-  MIDI.begin(1);  // Listen to all incoming messages
+  MIDI.begin(1);  // Listen to messages on channel 1
 
   Serial.begin(115200);  
 #else
