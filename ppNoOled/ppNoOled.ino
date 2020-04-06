@@ -17,6 +17,9 @@
 #define HHMIDI 42
 #define LTMIDI 45
 
+byte BDtoggle=0,LTtoggle=0;
+
+
 // Created and bind the MIDI interface to the default hardware Serial port
 MIDI_CREATE_DEFAULT_INSTANCE();
 
@@ -115,6 +118,8 @@ byte tval[NVOICES];
 byte vpin[] = {BDPIN,SDPIN,HHPIN,LTPIN};
 
 
+
+
 unsigned long m1, m2;
 
 
@@ -140,9 +145,9 @@ void handleNoteOn(byte channel, byte pitch, byte velocity)
 
     switch(pitch){
       case BDMIDI:
-        digitalWrite(BDPIN,HIGH);
+        digitalWrite(BDPIN,BDtoggle = !BDtoggle);//HIGH);
         break;
-      case 39:
+      //case 39:
       case SDMIDI:
         digitalWrite(SDPIN,HIGH);
         break;
@@ -150,7 +155,7 @@ void handleNoteOn(byte channel, byte pitch, byte velocity)
         digitalWrite(HHPIN,HIGH);
         break;
       case LTMIDI:
-        digitalWrite(LTPIN,HIGH);
+        digitalWrite(LTPIN,LTtoggle = !LTtoggle);
         break;
       default:
         //digitalWrite(BDPIN,HIGH);
@@ -165,18 +170,18 @@ void handleNoteOff(byte channel, byte pitch, byte velocity)
     // Do something when the note is released.
     // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
     switch(pitch){
-      case BDMIDI:
-        digitalWrite(BDPIN,LOW);
-        break;
+      //case BDMIDI:
+      //  digitalWrite(BDPIN,LOW);
+      //  break;
       case SDMIDI:
         digitalWrite(SDPIN,LOW);
         break;
       case HHMIDI:
         digitalWrite(HHPIN,LOW);
         break;
-      case LTMIDI:
-        digitalWrite(LTPIN,LOW);
-        break;
+      //case LTMIDI:
+      //  digitalWrite(LTPIN,LOW);
+      //  break;
       default:
         //digitalWrite(BDPIN,LOW);
         break;
