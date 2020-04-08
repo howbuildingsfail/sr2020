@@ -1,8 +1,15 @@
 #include <Arduino.h>
 
-
 #include "hashDefines.h"
 
+
+
+//////////////////////////////////////////////////////////////////////////
+// PROTOTHREADS:
+#include <pt.h>
+
+static struct pt protoThreadB; //Beat
+static struct pt protoThreadC; //Controls
 
 //////////////////////////////////////////////////////////////////////////
 // MIDI libraries etc if needed:
@@ -27,7 +34,7 @@ MIDI_CREATE_DEFAULT_INSTANCE();
 
 //////////////////////////////////////////////////////////////////////////
 // OLED libraries etc if needed:
-
+//UNFORTUNATELY, THE OLED IS VERY NOISY - SO BEST TO WORK WITHOUT IT....
 //#define OLED
 #ifdef OLED
 
@@ -47,12 +54,17 @@ MIDI_CREATE_DEFAULT_INSTANCE();
 U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);  // Adafruit ESP8266/32u4/ARM Boards + FeatherWing OLED
 
 #endif
-
-
 /////////////////////////////////////////////////////////////////////////
 
 
+
+
+
+
 #include "srButton.h"
+
+#define LED_BEAT_PIN (A0)
+
 
 
 #define BTN_VOICE (7)
@@ -236,8 +248,6 @@ void setup() {
   pattern[3][0] = 0;
   pattern[3][1] =           B00000011;
   
-
-
   pinMode(VOLCAPIN,OUTPUT);
   
   pinMode(SDPIN,OUTPUT);
@@ -245,6 +255,8 @@ void setup() {
   pinMode(HHPIN,OUTPUT);
   pinMode(LTPIN,OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
+
+  pinMode(LED_BEAT_PIN, OUTPUT);
 
   //Button shizz
   
@@ -286,8 +298,15 @@ void setup() {
   update_voice(gv,update_gv());
 #endif
 
+PT_INIT(&protoThreadB);
+PT_INIT(&protoThreadC);
 
-}
+
+}//END of setup()
+
+
+
+
 
 
 /* TODO: this is a complicated way of updating the voice - but it's handy to return the 
@@ -335,11 +354,7 @@ byte vv;
  */
 #ifdef DOMIDI 
 void loop(){
-
-
   MIDI.read();
-
-  
 }
 
 
@@ -350,28 +365,40 @@ void loop(){
 byte gvb;
 byte gvbar;
 
-void loop() {
-  mc = 0;
-  m1 = millis();
+
+
+/* protothread for keeping da beat
+ *   
+ */
+static int protothreadBeat(struct pt *pt)
+{
+    /*static unsigned long lastTimeBlink = 0;
+    PT_BEGIN(pt);
+    while(1) {
+      lastTimeBlink = millis();
+      PT_WAIT_UNTIL(pt, millis() - lastTimeBlink > 1000);
+      digitalWrite(LED_1_PIN, HIGH);
+      lastTimeBlink = millis();
+      PT_WAIT_UNTIL(pt, millis() - lastTimeBlink > 1000);
+      digitalWrite(LED_1_PIN, LOW);
+    }
+    PT_END(pt);*/
+
+  PT_BEGIN(pt);
+  m1=millis();
 
   if(playing){
     //cycle through the bars..
     if (!beat) {
-      switch (bar) {
-        case 0:
-          bar = 1;
-          break;
-        case 1:
-          bar = 0;
-          break;
-      }
+      bar = 1-bar;
+      digitalWrite(LED_BEAT_PIN, HIGH);
     }
-
+    else{
+      digitalWrite(LED_BEAT_PIN, LOW);
+    }
   
     gvb = beat;
     gvbar = bar;
-
-
     
     for(vv=0;vv<NVOICES;vv++){
       tval[vv] = trigger(pattern[vv][bar],beat);
@@ -380,44 +407,65 @@ void loop() {
     for(vv=0;vv<NVOICES;vv++)
       digitalWrite(vpin[vv], tval[vv]);
 
+    //Send the volca timer info
     digitalWrite(VOLCAPIN,HIGH);  
-    do{
-      m2 = millis();
-      mc++;
-    }while(m1+TRIG_LEN > m2);
-
+    //do{
+    //  m2 = millis();
+    //  mc++;
+    //}while(m1+TRIG_LEN > m2);
+    //PT_WAIT_UNTIL(pt, millis() - lastTimeBlink > 1000);
+    PT_WAIT_UNTIL(pt, millis() - m1 > TRIG_LEN);
     digitalWrite(VOLCAPIN,LOW);  
 
-    //Should do it this way when all the voices have the same trigger length:
+    //NB! We are assuming TRIG_LEN is the same for all voices here!
     //for(vv=0;vv<NVOICES;vv++)
     //  digitalWrite(vpin[vv], LOW);
-    //But for now we are just triggering the two twin-t drums on BDPIN and SDPIN
     digitalWrite(BDPIN, LOW);
     digitalWrite(SDPIN, LOW);
     digitalWrite(HHPIN, LOW);
     digitalWrite(LTPIN, LOW);
 
-    //do{
-    //  m2 = millis();
-    //  mc++;
-    //}while(m1+TRIG_LEN+TRIG_LEN+TRIG_LEN > m2);
-    //digitalWrite(LTPIN, LOW);
-
-  
-    //This reports to serial, but also puts a bit of noise on the line!
-    //sp("Bar ");sp(bar,DEC);sp(", Beat ");sp(beat,DEC);sp(", bdval = ");sp(bdval,DEC);sp(", sdval = ");sp(sdval,DEC);sp(", mc = ");sp(mc,DEC);spl();
-    
     //update beat
     beat++;
     if (beat > 7) beat = 0;
-
   }
+
+  
+  //PT_WAIT_UNTIL(pt, millis() - lastTimeBlink > 1000);
+  //do{
+  //  m2 = millis();
+  //}while (m1 > m2);
+  PT_WAIT_UNTIL(pt, millis() - m1 > beatmillis);
+  
+  PT_END(pt);
+}
+
+
+
+
+
+static int protothreadCont(struct pt *pt)
+{
+    /*static unsigned long lastTimeBlink = 0;
+    PT_BEGIN(pt);
+    while(1) {
+      lastTimeBlink = millis();
+      PT_WAIT_UNTIL(pt, millis() - lastTimeBlink > 1000);
+      digitalWrite(LED_1_PIN, HIGH);
+      lastTimeBlink = millis();
+      PT_WAIT_UNTIL(pt, millis() - lastTimeBlink > 1000);
+      digitalWrite(LED_1_PIN, LOW);
+    }
+    PT_END(pt);*/
+
+
+    PT_BEGIN(pt);
 
   //NOW WE CAN USE THE REMAINING TIME TO UPDATE THINGS..
   //Timer
-  m1 += beatmillis-TRIG_LEN;
-  m2 = millis();
-  sprintf(bbc,"%d",m1-m2);
+  //m1 += beatmillis-TRIG_LEN;
+  //m2 = millis();
+  //sprintf(bbc,"%d",m1-m2);
 
 
 #ifdef OLED
@@ -429,8 +477,8 @@ void loop() {
 #endif
 
   //update controls
-  do{
-    m2 = millis();
+  //do{
+  //  m2 = millis();
 
     if(btn_ststop.check(millis())){
       digitalWrite(LED_BUILTIN, HIGH);
@@ -476,7 +524,7 @@ void loop() {
 
     if(btn_faster.check(millis())){
       digitalWrite(LED_BUILTIN, HIGH);
-      bpm += 8;
+      bpm += 8; 
       beatmillis = 60000/bpm;
     }
     else{
@@ -487,8 +535,21 @@ void loop() {
     u8g2.sendBuffer(); 
 #endif
 
-  }while (m1 > m2);
+    PT_END(pt);
 
+
+}
+
+
+
+
+void loop() {
+  //mc = 0;
+  //m1 = millis();
+
+  protothreadBeat(&protoThreadB);
+  protothreadCont(&protoThreadC);
+  
 }
 
 #endif
