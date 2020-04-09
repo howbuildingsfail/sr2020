@@ -31,49 +31,12 @@ byte BDtoggle=0,LTtoggle=0;
 MIDI_CREATE_DEFAULT_INSTANCE();
 
 #endif
-
-//////////////////////////////////////////////////////////////////////////
-// OLED libraries etc if needed:
-//UNFORTUNATELY, THE OLED IS VERY NOISY - SO BEST TO WORK WITHOUT IT....
-//#define OLED
-#ifdef OLED
-
-#include <U8g2lib.h>
-
-#include "srNoOled.h"
-
-//OLED 192x32 stuff - probably I2C or something like that:
-#ifdef U8X8_HAVE_HW_SPI
-#include <SPI.h>
-#endif
-
-#ifdef U8X8_HAVE_HW_I2C
-#include <Wire.h>
-#endif
-
-U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);  // Adafruit ESP8266/32u4/ARM Boards + FeatherWing OLED
-
-#endif
 /////////////////////////////////////////////////////////////////////////
-
-
-
-
 
 
 #include "srButton.h"
 
-#define LED_BEAT_PIN (A0)
-
-
-
-#define BTN_VOICE (7)
-#define BTN_HIT (8)
-#define BTN_STSTOP (9)
-#define BTN_SLOWER (10)
-#define BTN_FASTER (11)
-#define BTN_REC (12) //not needed!
-
+byte gv_led[] = {LED_BD_PIN,LED_SD_PIN,LED_HH_PIN,LED_LT_PIN};
 
 srButton btn_voice(BTN_VOICE);
 srButton btn_hit(BTN_HIT);
@@ -257,7 +220,12 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 
   pinMode(LED_BEAT_PIN, OUTPUT);
-
+  pinMode(LED_BD_PIN, OUTPUT);
+  pinMode(LED_SD_PIN, OUTPUT);
+  pinMode(LED_HH_PIN, OUTPUT);
+  pinMode(LED_LT_PIN, OUTPUT);
+  //digitalWrite(LED_BD_PIN,HIGH);
+  update_gv();
   //Button shizz
   
   //configure pin 2 as an input and enable the internal pull-up resistor
@@ -291,13 +259,6 @@ void setup() {
 #endif  
 
 
-#ifdef OLED
-  u8g2.begin();
-  
-  u8g2_prepare();
-  update_voice(gv,update_gv());
-#endif
-
 PT_INIT(&protoThreadB);
 PT_INIT(&protoThreadC);
 
@@ -306,6 +267,18 @@ PT_INIT(&protoThreadC);
 
 
 
+
+void set_voice_led(byte LED){
+
+  digitalWrite(LED_BD_PIN, LOW);
+  digitalWrite(LED_SD_PIN, LOW);
+  digitalWrite(LED_HH_PIN, LOW);
+  digitalWrite(LED_LT_PIN, LOW);
+  
+  digitalWrite(LED, HIGH);
+  
+  
+}
 
 
 
@@ -318,6 +291,8 @@ byte update_gv(){
       gv++;
       if(gv>3)gv=0;
 
+      set_voice_led(gv_led[gv]);
+
       return gv;
   
 }
@@ -325,9 +300,6 @@ byte update_gv(){
 
 
 int trigger(byte pattern, byte beat) {
-
-  //byte pand = pattern & idx[beat];
-  //sp("beat = ");sp(beat,DEC);sp(", index = ");sp(idx[beat],BIN);sp(", pand = ");sp(pand,BIN);spl();
 
   return (((pattern & idx[beat]) << beat) >> 7);
 }
@@ -372,17 +344,6 @@ byte gvbar;
  */
 static int protothreadBeat(struct pt *pt)
 {
-    /*static unsigned long lastTimeBlink = 0;
-    PT_BEGIN(pt);
-    while(1) {
-      lastTimeBlink = millis();
-      PT_WAIT_UNTIL(pt, millis() - lastTimeBlink > 1000);
-      digitalWrite(LED_1_PIN, HIGH);
-      lastTimeBlink = millis();
-      PT_WAIT_UNTIL(pt, millis() - lastTimeBlink > 1000);
-      digitalWrite(LED_1_PIN, LOW);
-    }
-    PT_END(pt);*/
 
   PT_BEGIN(pt);
   m1=millis();
@@ -409,11 +370,6 @@ static int protothreadBeat(struct pt *pt)
 
     //Send the volca timer info
     digitalWrite(VOLCAPIN,HIGH);  
-    //do{
-    //  m2 = millis();
-    //  mc++;
-    //}while(m1+TRIG_LEN > m2);
-    //PT_WAIT_UNTIL(pt, millis() - lastTimeBlink > 1000);
     PT_WAIT_UNTIL(pt, millis() - m1 > TRIG_LEN);
     digitalWrite(VOLCAPIN,LOW);  
 
@@ -446,39 +402,8 @@ static int protothreadBeat(struct pt *pt)
 
 static int protothreadCont(struct pt *pt)
 {
-    /*static unsigned long lastTimeBlink = 0;
-    PT_BEGIN(pt);
-    while(1) {
-      lastTimeBlink = millis();
-      PT_WAIT_UNTIL(pt, millis() - lastTimeBlink > 1000);
-      digitalWrite(LED_1_PIN, HIGH);
-      lastTimeBlink = millis();
-      PT_WAIT_UNTIL(pt, millis() - lastTimeBlink > 1000);
-      digitalWrite(LED_1_PIN, LOW);
-    }
-    PT_END(pt);*/
-
-
     PT_BEGIN(pt);
 
-  //NOW WE CAN USE THE REMAINING TIME TO UPDATE THINGS..
-  //Timer
-  //m1 += beatmillis-TRIG_LEN;
-  //m2 = millis();
-  //sprintf(bbc,"%d",m1-m2);
-
-
-#ifdef OLED
-  //update display  
-  u8g2.clearBuffer();
-  draw();
-  u8g2.drawStr(TEXT_X,6,bbc);
-  u8g2.sendBuffer();
-#endif
-
-  //update controls
-  //do{
-  //  m2 = millis();
 
     if(btn_ststop.check(millis())){
       digitalWrite(LED_BUILTIN, HIGH);
@@ -492,11 +417,7 @@ static int protothreadCont(struct pt *pt)
     
     if(btn_voice.check(millis())){
       digitalWrite(LED_BUILTIN, HIGH);
-#ifdef OLED
-      update_voice(gv,update_gv());
-#else
-      update_gv();      
-#endif
+      update_gv();   
     }
     else{
       digitalWrite(LED_BUILTIN, LOW);
@@ -531,21 +452,13 @@ static int protothreadCont(struct pt *pt)
       digitalWrite(LED_BUILTIN, LOW);
     }
 
-#ifdef OLED
-    u8g2.sendBuffer(); 
-#endif
-
     PT_END(pt);
-
-
 }
 
 
 
 
 void loop() {
-  //mc = 0;
-  //m1 = millis();
 
   protothreadBeat(&protoThreadB);
   protothreadCont(&protoThreadC);

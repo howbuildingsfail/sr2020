@@ -11,6 +11,19 @@
 #define HHPIN (5)
 #define LTPIN (6)
 
+#define LED_BEAT_PIN (A0)
+#define LED_BD_PIN (A1)
+#define LED_SD_PIN (A2)
+#define LED_HH_PIN (A3)
+#define LED_LT_PIN (A4)
+
+#define BTN_VOICE (7)
+#define BTN_HIT (8)
+#define BTN_STSTOP (9)
+#define BTN_SLOWER (10)
+#define BTN_FASTER (11)
+#define BTN_REC (12) //not needed!
+
 
 int trigger(byte pattern, byte beat);
 
