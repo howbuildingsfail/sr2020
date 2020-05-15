@@ -2,6 +2,7 @@
 #ifndef   SRBUTTON_H
 #define   SRBUTTON_H
 
+//TODO: make this value variable, so we can vary it by beat length - 
 #define DEBOUNCE_DELAY (150) //millisecond delay
 
 class srButton{

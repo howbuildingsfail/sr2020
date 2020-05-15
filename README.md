@@ -49,3 +49,10 @@ the oled driver used here is: `https://github.com/olikraus/u8g2`
 - **SQ**
 - **Out**
 - **Footsw**
+
+# Resources:
+
+http://www.thebox.myzen.co.uk/Tutorial/Introduction.html
+
+
+
