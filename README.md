@@ -54,5 +54,12 @@ the oled driver used here is: `https://github.com/olikraus/u8g2`
 
 http://www.thebox.myzen.co.uk/Tutorial/Introduction.html
 
+# Design notes
+
+- 4069UB has blown on me for the filter drum - possibly when I was running the 18v system and I might have accidntally hooked it up - some forums say the 4049UB is more reliable as it has voltage protection. 
+- V hard to stop some leakage from the XOR clang voice
+
+
+
 
 

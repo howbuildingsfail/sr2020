@@ -3,7 +3,6 @@
 #include "hashDefines.h"
 
 
-
 //////////////////////////////////////////////////////////////////////////
 // PROTOTHREADS:
 #include <pt.h>
@@ -59,7 +58,9 @@ byte memory[NMEMS][NVOICES][NBARS];
 
 
 //TODO: When we start to store patterns
+pattnstruct pat[NPATTERNS];
 byte pattern[NVOICES][NBARS];
+//byte *pattern[NVOICES][NBARS];
 
 //byte bd1 = B11011101;
 //byte bd2 =           B10110111;
@@ -201,7 +202,7 @@ void setup() {
   pattern[3][1] = 0;
 */
 
-
+  //pattern = (pat[0].p);
   pattern[0][0] = B11011101;
   pattern[0][1] =           0;
   pattern[1][0] = 0;

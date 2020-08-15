@@ -4,6 +4,7 @@
 
 #define NBARS (2)
 #define NVOICES (4)
+#define NPATTERNS (8)
 
 #define VOLCAPIN (2)
 #define BDPIN (3)
@@ -24,7 +25,17 @@
 #define BTN_FASTER (11)
 #define BTN_REC (12) //not needed!
 
+// Pattern structure
 
+typedef struct tds{
+  byte p[NBARS][NVOICES];
+  byte bpm = 0;
+} pattnstruct;
+
+
+
+
+// Function definitions
 int trigger(byte pattern, byte beat);
 
 #endif
