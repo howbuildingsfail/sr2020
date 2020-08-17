@@ -7,23 +7,45 @@
 #define NPATTERNS (8)
 
 #define VOLCAPIN (2)
+
 #define BDPIN (3)
-#define SDPIN (4)
-#define HHPIN (5)
+#define SDPIN (5)
+#define HHPIN (4)
 #define LTPIN (6)
 
-#define LED_BEAT_PIN (A0)
-#define LED_BD_PIN (A1)
-#define LED_SD_PIN (A2)
-#define LED_HH_PIN (A3)
-#define LED_LT_PIN (A4)
+//#define LED_BEAT_PIN (A0)
+//#define LED_BD_PIN (A1)
+//#define LED_SD_PIN (A2)
+//#define LED_HH_PIN (A3)
+//#define LED_LT_PIN (A4)
 
-#define BTN_VOICE (7)
-#define BTN_HIT (8)
-#define BTN_STSTOP (9)
+//#define BTN_VOICE (7)
+//#define BTN_HIT (8)
+//#define BTN_STSTOP (9)
+//#define BTN_SLOWER (10)
+//#define BTN_FASTER (11)
+
+#define LED_SD_PIN (A0)
+#define LED_BD_PIN (A1)
+#define LED_BEAT_PIN (A2)
+#define LED_LT_PIN (A3)
+#define LED_HH_PIN (A4)
+
+#define BTN_HIT (7)
+#define BTN_STSTOP (8)
+#define BTN_VOICE (9)
 #define BTN_SLOWER (10)
 #define BTN_FASTER (11)
-#define BTN_REC (12) //not needed!
+
+//Here are the indexes in the pattern array
+#define SD_IDX (0)
+#define BD_IDX (1)
+#define LT_IDX (2)
+#define HH_IDX (3)
+
+
+
+//#define BTN_REC (12) //not needed!
 
 // Pattern structure
 

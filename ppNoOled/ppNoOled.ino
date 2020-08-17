@@ -35,7 +35,7 @@ MIDI_CREATE_DEFAULT_INSTANCE();
 
 #include "srButton.h"
 
-byte gv_led[] = {LED_BD_PIN,LED_SD_PIN,LED_HH_PIN,LED_LT_PIN};
+byte gv_led[] = {LED_SD_PIN,LED_BD_PIN,LED_LT_PIN,LED_HH_PIN};
 
 srButton btn_voice(BTN_VOICE);
 srButton btn_hit(BTN_HIT);
@@ -91,7 +91,8 @@ byte idx[] = {B10000000,
 
 //int bdval, sdval;
 byte tval[NVOICES];
-byte vpin[] = {BDPIN,SDPIN,HHPIN,LTPIN};
+byte vpin[] = {BDPIN,SDPIN,HHPIN,LTPIN}; 
+//byte vpin[] =   {SDPIN,BDPIN,LTPIN,HHPIN};
 
 
 
@@ -203,14 +204,14 @@ void setup() {
 */
 
   //pattern = (pat[0].p);
-  pattern[0][0] = B11011101;
-  pattern[0][1] =           0;
-  pattern[1][0] = 0;
-  pattern[1][1] =           B11011101;
-  pattern[2][0] = B00100010;
-  pattern[2][1] =           B00100010;
-  pattern[3][0] = 0;
-  pattern[3][1] =           B00000011;
+  pattern[BD_IDX][0] = B11011101;
+  pattern[BD_IDX][1] =           0;
+  pattern[LT_IDX][0] = 0;
+  pattern[LT_IDX][1] =           B11011101;
+  pattern[HH_IDX][0] = B00100010;
+  pattern[HH_IDX][1] =           B00100010;
+  pattern[SD_IDX][0] = 0;
+  pattern[SD_IDX][1] =           B00000011;
   
   pinMode(VOLCAPIN,OUTPUT);
   
@@ -259,16 +260,14 @@ void setup() {
 
 #endif  
 
-
-PT_INIT(&protoThreadB);
-PT_INIT(&protoThreadC);
-
+  PT_INIT(&protoThreadB);
+  PT_INIT(&protoThreadC);
 
 }//END of setup()
 
 
 
-
+//TODO: this could be more efficient!
 void set_voice_led(byte LED){
 
   digitalWrite(LED_BD_PIN, LOW);
@@ -277,7 +276,6 @@ void set_voice_led(byte LED){
   digitalWrite(LED_LT_PIN, LOW);
   
   digitalWrite(LED, HIGH);
-  
   
 }
 
@@ -306,20 +304,8 @@ int trigger(byte pattern, byte beat) {
 }
 
 
-
-
-
-
-
-
-
-
-
 long mc = 0;
 byte vv;
-
-
-
 
 
 /* Instead of waiting for the 'beat' to end within a single iteration of loop, let's 
@@ -437,7 +423,8 @@ static int protothreadCont(struct pt *pt)
 
     if(btn_slower.check(millis())){
       digitalWrite(LED_BUILTIN, HIGH);
-      if(bpm > 8)bpm -= 8;
+      if(bpm > 8)
+        bpm -= 8;
       beatmillis =  60000/bpm;
     }
     else{
