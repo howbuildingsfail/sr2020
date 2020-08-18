@@ -70,13 +70,10 @@ byte pattern[NVOICES][NBARS];
 //byte bdc;
 //byte sdc;
 byte beat = 0;
-byte bar = 1; // has to be the last bar so we do the switch correctly
+byte bar = 1; // has to be initialised to the last bar so we do the switch correctly
 int bpm = 240;
 int beatmillis =  60000/bpm;  //500;//1000;//400;
 int t1, t2;
-
-//buffer for writing stuff
-char bbc[8];
 
 //Let's use eight bytes just to keep things clear!
 byte idx[] = {B10000000,
@@ -91,7 +88,8 @@ byte idx[] = {B10000000,
 
 //int bdval, sdval;
 byte tval[NVOICES];
-byte vpin[] = {BDPIN,SDPIN,HHPIN,LTPIN}; 
+byte vpin[] = {SDPIN,BDPIN,LTPIN,HHPIN}; 
+//byte vpin[] = {LTPIN,HHPIN,BDPIN,SDPIN}; 
 //byte vpin[] =   {SDPIN,BDPIN,LTPIN,HHPIN};
 
 
@@ -204,14 +202,14 @@ void setup() {
 */
 
   //pattern = (pat[0].p);
-  pattern[BD_IDX][0] = B11011101;
+  pattern[SD_IDX][0] = 0;
+  pattern[SD_IDX][1] = 0; //          B00000011;
+  pattern[BD_IDX][0] = 0; //B11011101;
   pattern[BD_IDX][1] =           0;
   pattern[LT_IDX][0] = 0;
-  pattern[LT_IDX][1] =           B11011101;
-  pattern[HH_IDX][0] = B00100010;
-  pattern[HH_IDX][1] =           B00100010;
-  pattern[SD_IDX][0] = 0;
-  pattern[SD_IDX][1] =           B00000011;
+  pattern[LT_IDX][1] = 0; //          B11011101;
+  pattern[HH_IDX][0] = 0; //B00100010;
+  pattern[HH_IDX][1] = 0;//          B00100010;
   
   pinMode(VOLCAPIN,OUTPUT);
   
