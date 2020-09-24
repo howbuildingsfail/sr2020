@@ -13,7 +13,7 @@ static struct pt protoThreadC; //Controls
 //////////////////////////////////////////////////////////////////////////
 // MIDI libraries etc if needed:
 
-//#define DOMIDI
+#define DOMIDI
 #ifdef DOMIDI
 
 #include <MIDI.h>
@@ -49,7 +49,7 @@ bool playing = true;
 #define sp  Serial.print
 #define spl Serial.println
 
-#define TRIG_LEN (15)
+#define TRIG_LEN (30)
 
 #define NMEMS (18)
 
@@ -97,13 +97,47 @@ byte vpin[] = {SDPIN,BDPIN,LTPIN,HHPIN};
 
 unsigned long m1, m2;
 
+//Todo: hold this in a struct!
+unsigned long midimillis[4];
+bool miditrig[4];
+
 
 byte gv = 3;
 
 
 
+//----
+// JOHN TUFFEN'S WONKYSTUFF RNG CODE: 
+// See http://doitwireless.com/2014/06/26/8-bit-pseudo-random-number-generator/
+// https://en.wikipedia.org/wiki/Linear-feedback_shift_register#Galois_LFSRs
+uint8_t rnd(void)
+{
+  static uint8_t r = 0x23;
+  uint8_t lsb = r & 1;
+  r >>= 1;
+  r ^= (-lsb) & 0xB8;
+  return r;
+}
+//----
+
+
+
+
+
+
+
+
+
 // -----------------------------------------------------------------------------
 #ifdef DOMIDI
+
+
+void setmiditrig(byte idx){
+  midimillis[idx]=millis()+TRIG_LEN;
+  miditrig[idx] = true;
+  
+}
+
 
 // This function will be automatically called when a NoteOn is received.
 // It must be a void-returning function with the correct parameters,
@@ -117,24 +151,27 @@ void handleNoteOn(byte channel, byte pitch, byte velocity)
     // Try to keep your callbacks short (no delays ect)
     // otherwise it would slow down the loop() and have a bad impact
     // on real-time performance.
-
-    switch(pitch){
-      case BDMIDI:
-        digitalWrite(BDPIN,BDtoggle = !BDtoggle);//HIGH);
-        break;
-      //case 39:
-      case SDMIDI:
-        digitalWrite(SDPIN,HIGH);
-        break;
-      case HHMIDI:
-        digitalWrite(HHPIN,HIGH);
-        break;
-      case LTMIDI:
-        digitalWrite(LTPIN,LTtoggle = !LTtoggle);
-        break;
-      default:
-        //digitalWrite(BDPIN,HIGH);
-        break;
+    if(velocity > 65){
+      switch(pitch){
+        case BDMIDI:
+          digitalWrite(BDPIN,HIGH);//BDtoggle = !BDtoggle);//HIGH);
+          setmiditrig(BD_IDX);
+          break;
+        //case 39:
+        case SDMIDI:
+          digitalWrite(SDPIN,HIGH);
+          break;
+        case HHMIDI:
+          digitalWrite(HHPIN,HIGH);
+          break;
+        case LTMIDI:
+          digitalWrite(LTPIN,HIGH);//LTtoggle = !LTtoggle);
+          setmiditrig(LT_IDX);
+          break;
+        default:
+          //digitalWrite(BDPIN,HIGH);
+          break;
+      }
     }
 
     digitalWrite(LED_BUILTIN, HIGH);
@@ -145,9 +182,9 @@ void handleNoteOff(byte channel, byte pitch, byte velocity)
     // Do something when the note is released.
     // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
     switch(pitch){
-      //case BDMIDI:
-      //  digitalWrite(BDPIN,LOW);
-      //  break;
+      case BDMIDI:
+          //digitalWrite(BDPIN,BDtoggle = !BDtoggle);//HIGH);
+          break;
       case SDMIDI:
         digitalWrite(SDPIN,LOW);
         break;
@@ -306,18 +343,30 @@ long mc = 0;
 byte vv;
 
 
-/* Instead of waiting for the 'beat' to end within a single iteration of loop, let's 
- * cycle around the whole thing but use TimedAction objects to handle the triggering
- */
 #ifdef DOMIDI 
 void loop(){
   MIDI.read();
+  for(byte ii = 0;ii<4;ii++){
+    if(miditrig[ii]){
+      if(midimillis[ii]<millis()){
+        miditrig[ii]=false;
+        switch(ii){
+          case BD_IDX:
+            digitalWrite(BDPIN,LOW);
+            digitalWrite(LED_BD_PIN, LOW);
+            break;
+          case LT_IDX:
+            digitalWrite(LTPIN,LOW);
+            digitalWrite(LED_LT_PIN, LOW);
+            break;
+        }
+      }
+    }
+  }
 }
 
 
 #else
-//////////////////////////////////////////////////////////////////////////////////////
-// Delete what's below when you have the loop() above working properly
 
 byte gvb;
 byte gvbar;
