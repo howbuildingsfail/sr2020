@@ -59,8 +59,8 @@ byte memory[NMEMS][NVOICES][NBARS];
 
 //TODO: When we start to store patterns
 pattnstruct pat[NPATTERNS];
-byte pattern[NVOICES][NBARS];
-//byte *pattern[NVOICES][NBARS];
+//byte pattern[NVOICES][NBARS];
+byte *pattern[NVOICES][NBARS];
 
 //byte bd1 = B11011101;
 //byte bd2 =           B10110111;
@@ -240,13 +240,13 @@ void setup() {
 
   //pattern = (pat[0].p);
   pattern[SD_IDX][0] = 0;
-  pattern[SD_IDX][1] = 0; //          B00000011;
-  pattern[BD_IDX][0] = 0; //B11011101;
+  pattern[SD_IDX][1] =           B00000011;
+  pattern[BD_IDX][0] = B11011101;
   pattern[BD_IDX][1] =           0;
   pattern[LT_IDX][0] = 0;
-  pattern[LT_IDX][1] = 0; //          B11011101;
-  pattern[HH_IDX][0] = 0; //B00100010;
-  pattern[HH_IDX][1] = 0;//          B00100010;
+  pattern[LT_IDX][1] =           B11011101;
+  pattern[HH_IDX][0] = B00100010;
+  pattern[HH_IDX][1] =          B00100010;
   
   pinMode(VOLCAPIN,OUTPUT);
   
@@ -342,31 +342,6 @@ int trigger(byte pattern, byte beat) {
 long mc = 0;
 byte vv;
 
-
-#ifdef DOMIDI 
-void loop(){
-  MIDI.read();
-  for(byte ii = 0;ii<4;ii++){
-    if(miditrig[ii]){
-      if(midimillis[ii]<millis()){
-        miditrig[ii]=false;
-        switch(ii){
-          case BD_IDX:
-            digitalWrite(BDPIN,LOW);
-            digitalWrite(LED_BD_PIN, LOW);
-            break;
-          case LT_IDX:
-            digitalWrite(LTPIN,LOW);
-            digitalWrite(LED_LT_PIN, LOW);
-            break;
-        }
-      }
-    }
-  }
-}
-
-
-#else
 
 byte gvb;
 byte gvbar;
@@ -491,13 +466,29 @@ static int protothreadCont(struct pt *pt)
 }
 
 
-
-
 void loop() {
 
+#ifdef DOMIDI 
+  MIDI.read();
+  for(byte ii = 0;ii<4;ii++){
+    if(miditrig[ii]){
+      if(midimillis[ii]<millis()){
+        miditrig[ii]=false;
+        switch(ii){
+          case BD_IDX:
+            digitalWrite(BDPIN,LOW);
+            digitalWrite(LED_BD_PIN, LOW);
+            break;
+          case LT_IDX:
+            digitalWrite(LTPIN,LOW);
+            digitalWrite(LED_LT_PIN, LOW);
+            break;
+        }
+      }
+    }
+  }
+#endif
   protothreadBeat(&protoThreadB);
   protothreadCont(&protoThreadC);
   
 }
-
-#endif

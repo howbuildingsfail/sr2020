@@ -1,0 +1,70 @@
+---
+title: "pic 2 pcb splitter"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+We are going to find automated ways to convert images to make layers for PCBs that look 'nice'
+
+# Comic in
+
+Here's the input image: 
+
+```{r}
+k<-require(png)
+imgin <- readPNG("../eerieMusic.png")#~/Desktop/shapeimg/bridge100x40y.png")
+plot(NA,xlim=c(1,200),ylim=c(1,112),asp = 1,xlab="X",ylab="Y")
+rasterImage(imgin, 1, 1, 200, 112)
+```
+```{r fig.height=4, fig.width=12}
+imgin[,,1]<-(imgin[,,1]-min(imgin[,,1]))/(max(imgin[,,1])-min(imgin[,,1]))
+imgin[,,2]<-(imgin[,,2]-min(imgin[,,2]))/(max(imgin[,,2])-min(imgin[,,2]))
+imgin[,,3]<-(imgin[,,3]-min(imgin[,,3]))/(max(imgin[,,3])-min(imgin[,,3]))
+par(mfrow=c(1,3))
+plot(x=imgin[,,1],y=imgin[,,2],pch=19,cex=0.1,col=rgb(imgin[,,1],imgin[,,2],imgin[,,3]),xlim=c(0,1),ylim=c(0,1),xlab="red",ylab="green")
+lines(x=seq(0,1,0.05),y=0.02+seq(0,1,0.05),col="green")
+plot(x=imgin[,,2],y=imgin[,,3],pch=19,cex=0.1,col=rgb(imgin[,,1],imgin[,,2],imgin[,,3]),xlim=c(0,1),ylim=c(0,1),xlab="green",ylab="blue")
+plot(x=imgin[,,3],y=imgin[,,1],pch=19,cex=0.1,col=rgb(imgin[,,1],imgin[,,2],imgin[,,3]),xlim=c(0,1),ylim=c(0,1),xlab="blue",ylab="red")
+
+imgout<-imgin
+for(xx in 1:442){
+  for(yy in 1:787){
+    
+    
+    if(imgout[xx,yy,1]-0.2 > imgout[xx,yy,2]){
+        imgout[xx,yy,1]<-1
+        imgout[xx,yy,2]<-0
+        imgout[xx,yy,3]<-0
+    }else{
+      if(imgout[xx,yy,1]+0.02 < imgout[xx,yy,2]){
+          imgout[xx,yy,1]<-0
+          imgout[xx,yy,2]<-1
+          imgout[xx,yy,3]<-0
+      }else{
+        blackth=0.6
+        if((imgout[xx,yy,1]+imgout[xx,yy,2]+imgout[xx,yy,3])/3< blackth){
+          imgout[xx,yy,1]<-0
+          imgout[xx,yy,2]<-0
+          imgout[xx,yy,3]<-0
+        }else{
+          imgout[xx,yy,1]<-1
+          imgout[xx,yy,2]<-1
+          imgout[xx,yy,3]<-1
+        }
+      }
+    }
+  }
+}
+
+
+par(mfrow=c(1,2))
+plot(NA,xlim=c(1,200),ylim=c(1,112),asp = 1,xlab="X",ylab="Y")
+rasterImage(imgin, 1, 1, 200, 112)
+plot(NA,xlim=c(1,200),ylim=c(1,112),asp = 1,xlab="X",ylab="Y")
+rasterImage(imgout, 1, 1, 200, 112)
+```
+
+
