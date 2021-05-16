@@ -2,6 +2,20 @@
 an sr-88 drum machine for 2020
 
 
+# MIDI details. 
+
+Here are the notes for the voices: 
+
+- **36**: Bass Drum
+- **39**: Snare/Cymbal
+- **42**: "Cowbell"
+- **45**: Tom
+
+To set up with ttymidi, do: 
+
+`ttymidi -s /dev/ttyUSB0 -b 115200 -n sr2020`
+
+
 # sr2020 execution pseudocode
 
 The `loop()` function should contain the following elements: 
@@ -25,9 +39,11 @@ if(playing)
 ```
 
 
+
+
 # OLED
 
-the oled driver used here is: `https://github.com/olikraus/u8g2`
+the oled driver used here is: `https://github.com/olikraus/u8g2`, but unfortunately it puts a *lot* of noise on the audio path
 
 
 
